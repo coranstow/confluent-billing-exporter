@@ -5,7 +5,6 @@ import time
 from argparse import ArgumentParser, FileType
 from configparser import ConfigParser
 
-import configargparse
 import requests
 from confluent_kafka import Producer
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
@@ -39,16 +38,11 @@ def delivery_report(err, msg):
 def main():
     # Metrics
     start_time = time.time()
+    print('Confluent Billing Exporter')
+    print("Start time:", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time)))
     api_request_counter = 0
     data_row_counter = 0
     produce_to_kafka_counter = 0
-
-    p = configargparse.ArgParser(description='Confluent Billing Importer Configuration',
-                                 default_config_files=['client.properties'])
-    p.add_argument('--bootstrap.server', required=True, env_var='CONFLUENT_BOOTSTRAP',
-                   help='The bootstrap string of the cluster to write to')
-
-
 
     # Get the config file from the args .
     parser = ArgumentParser()
@@ -109,6 +103,7 @@ def main():
                                      key=string_serializer(key),
                                      value=json_serializer(data, SerializationContext(topic, MessageField.VALUE)),
                                      on_delivery=delivery_report)
+                    produce_to_kafka_counter += 1
             elif response.status_code == 429:
                 backoff_time += 1
                 print(
@@ -133,10 +128,11 @@ def main():
 
     end_time = time.time()
     duration = end_time - start_time
-    print("Start time:", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time)))
     print("End time:", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end_time)))
     print("Duration:", duration, "seconds")
     print('Read', data_row_counter, 'data items from the REST API in ', api_request_counter, 'requests')
+    print('Produced', produce_to_kafka_counter, 'messages to Kafka topic ', topic)
+
 
 
 main()
