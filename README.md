@@ -17,12 +17,18 @@ The items in the [request] section of the properties file are passed in directly
 * A Topic to write to
 * An API Key for the cluster, that has at least the DeveloperWrite role binding to the target topic
 
+## Required arguments
+
+The program requires a number of variables to make it work, but I've used [ConfigArgParse] (https://pypi.org/project/ConfigArgParse/) to try and make it very flexible. For example, you should be able to supply a file containing all of the parameters that rarely change, such as the connection settings, and then individual parameters for that apply to a single run, such as the start and end dates.
+The program will default to looking for files called `client.properties` and `exporter.properties` and a config file can be passed using the `--file` flag. Every parameter can also be passed on the command line or as an environment variable. Run `python3 ./confluent-billing-exporter.py --help` to see the flags and environment variables. As long as all required variables are discovered in the environment, command line or a file the program will run. The order of precedence is that command line values override environment variables, which override config file values, which override defaults.
+
+
 ## To make it work
 * Update the `example.properties` file with the settings for your Confluent Cloud account and the name of the target topic
-* Update the `example.properties` file with the dates to be queried in the [request] section. Note that the API will not serve more than a month at a time and that the end date is exclusive. That is, to download all of the data for the month of October, you would specify `start_date=2023-10-01` and `end_date=2023-11-01`.
+* Update the `example.properties` file with the dates to be queried in the [request] section. Note that the API will not serve more than a month at a time and that the end date is exclusive. That is, to download all of the data for the month of October, you would specify `start-date=2023-10-01` and `end-date=2023-11-01`.
 * Execute the script
 ```
-python3 ./confluent-billing-exporter.py ./example.properties 
+python3 ./confluent-billing-exporter.py --file ./example.properties 
 ```
 
 ## References

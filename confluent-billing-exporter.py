@@ -157,8 +157,8 @@ def main(args):
 # main()
 if __name__ == '__main__':
     # Set up the configuration argument parser
-    # client.properties includes everything needed to connect to Kafka
-    # exporter.properties contains everything else, including REST API Key, topic and request parameters
+    # client.properties.old includes everything needed to connect to Kafka
+    # exporter.properties.old contains everything else, including REST API Key, topic and request parameters
     p = configargparse.ArgParser(default_config_files=['client.properties', 'exporter.properties'])
     # Arguments for config files
     p.add_argument('--file',
@@ -166,9 +166,9 @@ if __name__ == '__main__':
                    help='Path to a file containing properties',
                    env_var='CFLTBE_CONFIG_FILE')
 
-    # Arguments from client.properties
+    # Arguments from client.properties.old
     p.add_argument('--bootstrap.servers',
-                   # required=True,
+                   required=True,
                    dest='bootstrap_servers',
                    help='The Bootstrap Servers values for the Kafka cluster being produced to',
                    env_var='CFLTBE_BOOTSTRAP_SERVERS')
@@ -183,12 +183,12 @@ if __name__ == '__main__':
                    help='The sasl.mechanisms setting',
                    env_var='CFLTBE_SASL_MECHANISMS')
     p.add_argument('--sasl.username',
-                   # required=True,
+                   required=True,
                    dest='sasl_username',
                    help='An API Key for a service account with write access to the targer cluster and topic',
                    env_var='CFLTBE_CLUSTER_API_KEY')
     p.add_argument('--sasl.password',
-                   # required=True,
+                   required=True,
                    dest='sasl_password',
                    help='The secret for the API Key',
                    env_var='CFLTBE_CLUSTER_API_SECRET')
@@ -198,25 +198,26 @@ if __name__ == '__main__':
                    help='The session timeout for consumer sessions',
                    env_var='CFLTBE_SESSION_TIMEOUT_MS')
     p.add_argument('--schema.registry.url',
-                   # required=True,
+                   required=True,
                    dest='schema_registry_url',
                    help='The url for the Confluent Schema Registry',
                    env_var='CFLTBE_SCHEMA_REGISTRY_URL')
     p.add_argument('--basic.auth.credentials.source',
+                   required=True,
                    default='USER_INFO',
                    dest='basic_auth_credentials_source',
                    help='The basic auth credentials source',
                    env_var='CFLTBE_SCHEMA_REGISTRY_CREDENTIALS_SOURCE')
     p.add_argument('--basic.auth.user.info',
-                   # required=True,
+                   required=True,
                    dest='basic_auth_user_info',
                    help='The Basic Auth credentials for the Confluent Schema Registry, in the form of '
                         '"API_KEY:API_SECRET"',
                    env_var='CFLTBE_SCHEMA_REGISTRY_BASIC_AUTH')
 
-    # Arguments from exporter.properties
+    # Arguments from exporter.properties.old
     p.add_argument('--topic',
-                   # required=True,
+                   required=True,
                    help='The topic to produced to',
                    env_var='CFLTBE_TOPIC')
     p.add_argument('--rest-url',
@@ -224,19 +225,19 @@ if __name__ == '__main__':
                    help='The url of the Confluent Billing REST API',
                    env_var='CFLTBE_REST_URL')
     p.add_argument('--rest-api-key',
-                   # required=True,
+                    required=True,
                    help='A Confluent Cloud API Key for a user with the Organization Admin rolebinding',
                    env_var='CFLTBE_REST_API_KEY')
     p.add_argument('--rest-api-secret',
-                   # required=True,
+                   required=True,
                    help='The API Secret corresponding to the API Key',
                    env_var='CFLTBE_REST_API_SECRET')
     p.add_argument('--start-date',
-                   # required=True,
+                   required=True,
                    help='The topic to produced to',
                    env_var='CFLTBE_START_DATE')
     p.add_argument('--end-date',
-                   # required=True,
+                   required=True,
                    help='The topic to produced to',
                    env_var='CFLTBE_END_DATE')
     p.add_argument('--page-size',
