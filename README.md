@@ -43,6 +43,6 @@ The Confluent Cloud Billing API: https://docs.confluent.io/cloud/current/api.htm
 Documentation on how to retrieve costs for a range of dates: https://docs.confluent.io/cloud/current/billing/overview.html#retrieve-costs-for-a-range-of-dates
 
 ## To Do
-* Enable startup parameters to be supplied by environment, command line or config file, to make it more flexible
 * Make the schemas more conformant with the documented API
 * More/better error handling
+* Dockerise it
