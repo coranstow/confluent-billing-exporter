@@ -4,6 +4,9 @@ import time
 import configargparse
 
 import requests
+from datetime import *
+from dateutil.relativedelta import *
+import calendar
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
@@ -60,9 +63,20 @@ def schema_config(args):
 
 
 def request_params(args):
+    if args.start_date is not None and args.end_date is not None:
+        start_date = args.start_date
+        end_date = args.end_date
+    elif args.month is not None:
+        s = datetime.strptime(args.month, '%Y-%m').replace(day=1)
+        e = s + relativedelta(months=+1)
+        start_date = s.strftime('%Y-%m-%d')
+        end_date = e.strftime('%Y-%m-%d')
+    else:
+        raise Exception("Start and end dates or a month must be defined. Start dates are formatted YYYY-MM-DD, "
+                        "Month is formatted YYYY-MM")
     params = {
-        'start_date': args.start_date,
-        'end_date': args.end_date
+        'start_date': start_date,
+        'end_date': end_date
     }
     try:
         params['page_size'] = args.page_size
@@ -71,11 +85,12 @@ def request_params(args):
     return params
 
 
+
 def main(args):
     # Metrics
-    start_time = time.time()
+    start_time = datetime.now()
     print('Confluent Billing Exporter')
-    print("Start time:", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start_time)))
+    print('Start time:', start_time.strftime('%Y-%m-%d %H:%M:%S'))
     api_request_counter = 0
     data_row_counter = 0
     produce_to_kafka_counter = 0
@@ -90,9 +105,6 @@ def main(args):
     string_serializer = StringSerializer('utf_8')
     json_serializer = JSONSerializer(schema_str, schema_registry_client)
 
-    # Create Producer instance
-    producer = Producer(producer_config(args))
-
     # Set the outbound topic from the value in the config file
     topic = args.topic
 
@@ -101,6 +113,9 @@ def main(args):
                             params=request_params(args),
                             auth=(args.rest_api_key, args.rest_api_secret))
     api_request_counter += 1
+
+    # Create Producer instance *after* first request in case the request is bad
+    producer = Producer(producer_config(args))
 
     next_url = 'This is not empty, so we will run at least once'
     backoff_time = 0
@@ -130,7 +145,7 @@ def main(args):
                     f'Confluent Cloud Rate Limit exceeded, backing off for {backoff_time} seconds')
                 time.sleep(backoff_time)
             else:
-                raise HTTPError(f'HTTP Error: {response.status_code}')
+                raise HTTPError(response.status_code)
 
             if next_url:
                 response = requests.get(next_url, auth=(args.rest_api_key, args.rest_api_secret))
@@ -139,16 +154,23 @@ def main(args):
         except KeyboardInterrupt:
             break
         except HTTPError as e:
-            print(f'HTTP error: {e}')
+            if response.status_code == 400:
+                r = response.json()
+                for e in r['errors']:
+                    print(f'HTTP error: {e}')
+            else:
+                print(f'HTTP error: {e}')
+            producer.flush()
             break
         except ValueError as e:
             print(f"Value Error: {e}")
+            producer.flush()
             break
     producer.flush()
 
-    end_time = time.time()
+    end_time = datetime.now()
     duration = end_time - start_time
-    print("End time:", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(end_time)))
+    print("End time:", end_time.strftime("%Y-%m-%d %H:%M:%S"))
     print("Duration:", duration, "seconds")
     print('Read', data_row_counter, 'data items from the REST API in ', api_request_counter, 'requests')
     print('Produced', produce_to_kafka_counter, 'messages to Kafka topic', topic)
@@ -185,7 +207,7 @@ if __name__ == '__main__':
     p.add_argument('--sasl.username',
                    required=True,
                    dest='sasl_username',
-                   help='An API Key for a service account with write access to the targer cluster and topic',
+                   help='An API Key for a service account with write access to the target cluster and topic',
                    env_var='CFLTBE_CLUSTER_API_KEY')
     p.add_argument('--sasl.password',
                    required=True,
@@ -225,7 +247,7 @@ if __name__ == '__main__':
                    help='The url of the Confluent Billing REST API',
                    env_var='CFLTBE_REST_URL')
     p.add_argument('--rest-api-key',
-                    required=True,
+                   required=True,
                    help='A Confluent Cloud API Key for a user with the Organization Admin rolebinding',
                    env_var='CFLTBE_REST_API_KEY')
     p.add_argument('--rest-api-secret',
@@ -233,14 +255,17 @@ if __name__ == '__main__':
                    help='The API Secret corresponding to the API Key',
                    env_var='CFLTBE_REST_API_SECRET')
     p.add_argument('--start-date',
-                   required=True,
-                   help='The topic to produced to',
+                   # required=True,
+                   help='The start date for the export',
                    env_var='CFLTBE_START_DATE')
     p.add_argument('--end-date',
-                   required=True,
-                   help='The topic to produced to',
+                   # required=True,
+                   help='The end date for the export',
                    env_var='CFLTBE_END_DATE')
     p.add_argument('--page-size',
-                   help='The topic to produced to',
+                   help='The number of linet items to return in a single reqeust',
                    env_var='CFLTBE_PAGE_SIZE')
+    p.add_argument('--month',
+                   help='A single month to export, in the format YYYY-MM. Ignored if dates are supplied.',
+                   env_var='CFLTBE_MONTH')
     main(p.parse_args())
