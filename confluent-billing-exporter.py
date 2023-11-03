@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 import json
 import time
-import configargparse
-
-import requests
 from datetime import *
-from dateutil.relativedelta import *
-import calendar
+
+import configargparse
+import requests
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.json_schema import JSONSerializer
 from confluent_kafka.serialization import StringSerializer, SerializationContext, MessageField
+from dateutil.relativedelta import *
 from requests.exceptions import HTTPError
 
 

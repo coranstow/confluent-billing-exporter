@@ -16,6 +16,12 @@ The items in the [request] section of the properties file are passed in directly
 * A Confluent Cloud cluster
 * A Topic to write to
 * An API Key for the cluster, that has at least the DeveloperWrite role binding to the target topic
+* Python Libraries
+    * ConfigArgParse >= 1.7
+    * jsonschema >= 4.19.2
+    * python-dateutil >= 2.8.2
+    * confluent-kafka >= 2.3.0
+    * requests >= 2.31.0
 
 ## Required arguments
 
